@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import ExperimentChart from "./ExperimentChart";
 
-export default function Dashboard({ session, experiments, agentLog, currentExperiment, bestResult, onStop }) {
+export default function Dashboard({ session, experiments, agentLog, currentExperiment, bestResult, onStop, formatElapsed }) {
   const logRef = useRef(null);
 
   useEffect(() => {
@@ -15,6 +15,11 @@ export default function Dashboard({ session, experiments, agentLog, currentExper
     ? (((baseline - bestResult.val_bpb) / baseline) * 100).toFixed(1)
     : null;
 
+  // Training progress bar (0-100%)
+  const trainingProgress = currentExperiment?.ticks?.length > 0
+    ? Math.min(100, (currentExperiment.ticks[currentExperiment.ticks.length - 1].elapsed / 300) * 100)
+    : 0;
+
   return (
     <div className="grid grid-cols-[320px_1fr_280px] gap-4 h-[calc(100vh-120px)]">
       {/* Left: Agent Log */}
@@ -25,17 +30,26 @@ export default function Dashboard({ session, experiments, agentLog, currentExper
         </div>
         <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-0.5 font-mono text-[11px] leading-relaxed">
           {agentLog.length === 0 && (
-            <div className="text-text-muted text-center py-8">Waiting for agent output...</div>
+            <div className="text-text-muted text-center py-8 space-y-2">
+              <div className="text-lg">...</div>
+              <div>Initializing agent</div>
+              <div className="text-[10px]">Reading program.md, checking environment</div>
+            </div>
           )}
           {agentLog.map((entry, i) => (
             <div key={i} className={`log-entry px-2 py-0.5 rounded ${
               entry.level === "result" ? "text-accent bg-accent-dim" :
               entry.level === "error" ? "text-danger bg-danger-dim" :
               entry.level === "code" ? "text-text-secondary bg-surface-overlay" :
+              entry.level === "training" ? "text-warning/80" :
               "text-text-muted"
             }`}>
               <span className="text-text-muted/50 mr-2 select-none">
-                {entry.level === "result" ? "\u25B6" : entry.level === "error" ? "\u2718" : entry.level === "code" ? "\u276F" : "\u00B7"}
+                {entry.level === "result" ? "\u25B6" :
+                 entry.level === "error" ? "\u2718" :
+                 entry.level === "code" ? "\u276F" :
+                 entry.level === "training" ? "\u25CF" :
+                 "\u00B7"}
               </span>
               {entry.text}
             </div>
@@ -81,6 +95,11 @@ export default function Dashboard({ session, experiments, agentLog, currentExper
           {session.branch && (
             <div className="font-mono text-[11px] text-text-secondary truncate">{session.branch}</div>
           )}
+          {session.elapsedSeconds > 0 && (
+            <div className="font-mono text-[11px] text-text-muted">
+              Elapsed: {formatElapsed(session.elapsedSeconds)}
+            </div>
+          )}
           {session.active && (
             <button
               onClick={onStop}
@@ -92,7 +111,7 @@ export default function Dashboard({ session, experiments, agentLog, currentExper
         </div>
 
         {/* Best Result */}
-        <div className="bg-surface-raised border border-border-dim rounded-xl p-4 space-y-1 glow-green">
+        <div className={`bg-surface-raised border rounded-xl p-4 space-y-1 ${bestResult ? "border-accent/20 glow-green" : "border-border-dim"}`}>
           <span className="text-[10px] font-mono tracking-widest text-text-muted">BEST RESULT</span>
           {bestResult ? (
             <>
@@ -113,37 +132,70 @@ export default function Dashboard({ session, experiments, agentLog, currentExper
         </div>
 
         {/* Current Experiment */}
-        <div className="bg-surface-raised border border-border-dim rounded-xl p-4 space-y-1 flex-1">
-          <span className="text-[10px] font-mono tracking-widest text-text-muted">CURRENT</span>
+        <div className={`bg-surface-raised border rounded-xl p-4 space-y-1 flex-1 ${currentExperiment ? "border-warning/20" : "border-border-dim"}`}>
+          <span className="text-[10px] font-mono tracking-widest text-text-muted">CURRENT EXPERIMENT</span>
           {currentExperiment ? (
             <>
-              <div className="text-lg font-mono text-text-primary">#{currentExperiment.n}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-lg font-mono text-text-primary">#{currentExperiment.n}</div>
+                <span className="w-1.5 h-1.5 rounded-full bg-warning pulse-dot" />
+              </div>
+              {currentExperiment.hypothesis && (
+                <div className="text-[11px] text-text-secondary italic truncate mt-1">
+                  {currentExperiment.hypothesis}
+                </div>
+              )}
               {currentExperiment.ticks.length > 0 && (() => {
                 const last = currentExperiment.ticks[currentExperiment.ticks.length - 1];
                 const remaining = Math.max(0, 300 - last.elapsed);
                 const mins = Math.floor(remaining / 60);
                 const secs = Math.floor(remaining % 60);
                 return (
-                  <div className="space-y-1 mt-2">
-                    <div className="flex justify-between text-[11px] font-mono">
-                      <span className="text-text-muted">loss</span>
-                      <span className="text-text-primary">{last.loss.toFixed(4)}</span>
+                  <div className="space-y-2 mt-3">
+                    {/* Progress bar */}
+                    <div className="w-full h-1.5 bg-surface-overlay rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-warning rounded-full transition-all duration-1000"
+                        style={{ width: `${trainingProgress}%` }}
+                      />
                     </div>
-                    <div className="flex justify-between text-[11px] font-mono">
-                      <span className="text-text-muted">step</span>
-                      <span className="text-text-primary">{last.step}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] font-mono">
-                      <span className="text-text-muted">remaining</span>
-                      <span className="text-accent">{mins}:{secs.toString().padStart(2, "0")}</span>
+                    <div className="grid grid-cols-2 gap-1 text-[11px] font-mono">
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">loss</span>
+                        <span className="text-text-primary tabular-nums">{last.loss.toFixed(4)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">step</span>
+                        <span className="text-text-primary tabular-nums">{last.step}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">tok/s</span>
+                        <span className="text-text-primary tabular-nums">
+                          {last.tokens_per_sec ? last.tokens_per_sec.toLocaleString() : "--"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-text-muted">ETA</span>
+                        <span className="text-warning tabular-nums">{mins}:{secs.toString().padStart(2, "0")}</span>
+                      </div>
                     </div>
                   </div>
                 );
               })()}
+              {currentExperiment.ticks.length === 0 && (
+                <div className="text-[11px] text-text-muted font-mono mt-2 flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 border-2 border-warning/40 border-t-warning rounded-full animate-spin" />
+                  Compiling / warming up...
+                </div>
+              )}
             </>
           ) : (
-            <div className="text-sm text-text-muted font-mono">
-              {experiments.length > 0 ? "Between experiments" : "Waiting..."}
+            <div className="text-sm text-text-muted font-mono mt-1">
+              {session.active
+                ? experiments.length > 0
+                  ? "Agent analyzing results..."
+                  : "Agent initializing..."
+                : "No active session"}
             </div>
           )}
         </div>

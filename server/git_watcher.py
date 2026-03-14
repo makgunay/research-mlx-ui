@@ -21,16 +21,18 @@ class GitWatcher:
     def __init__(self, broadcaster, poll_interval: float = 2.0):
         self.broadcaster = broadcaster
         self.poll_interval = poll_interval
-        self._seen: set[str] = set()
+        self._seen_count = 0  # Track by row count, not commit hash
         self._experiments: list[Experiment] = []
 
     async def watch(self):
         while True:
             await asyncio.sleep(self.poll_interval)
             fresh = self._read_results_tsv()
-            for exp in fresh:
-                if exp.commit and exp.commit not in self._seen:
-                    self._seen.add(exp.commit)
+            # Only process rows we haven't seen yet (by index)
+            if len(fresh) > self._seen_count:
+                new_experiments = fresh[self._seen_count:]
+                self._seen_count = len(fresh)
+                for exp in new_experiments:
                     self._experiments.append(exp)
                     await self.broadcaster.broadcast({
                         "type": "experiment_done",

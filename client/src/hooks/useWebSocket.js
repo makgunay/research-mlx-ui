@@ -1,14 +1,22 @@
 import { useRef, useEffect } from "react";
 
-export function useWebSocket(url, onMessage) {
+export function useWebSocket(url, onMessage, { onOpen, onClose } = {}) {
   const wsRef = useRef(null);
   const reconnectTimer = useRef(null);
   const onMessageRef = useRef(onMessage);
+  const onOpenRef = useRef(onOpen);
+  const onCloseRef = useRef(onClose);
   onMessageRef.current = onMessage;
+  onOpenRef.current = onOpen;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     function connect() {
       wsRef.current = new WebSocket(url);
+
+      wsRef.current.onopen = () => {
+        onOpenRef.current?.();
+      };
 
       wsRef.current.onmessage = (event) => {
         try {
@@ -19,6 +27,7 @@ export function useWebSocket(url, onMessage) {
       };
 
       wsRef.current.onclose = () => {
+        onCloseRef.current?.();
         reconnectTimer.current = setTimeout(connect, 2000);
       };
 

@@ -5,3 +5,5 @@ ba25f86	1.340819	7.7	keep	cosine LR decay with warmup (50 steps warmup, cosine t
 271192a	1.318876	7.4	keep	depth=4 n_embd=768 (wider-shallower model)
 b9e2a19	1.313329	7.4	keep	fix cosine schedule TOTAL_STEPS=480 to match new arch
 -	1.336583	7.4	discard	muon_lr=0.03 (too aggressive, overshoots)
+75c349d	1.271283	7.4	keep	adamw_lr=1e-3 (3.3x increase, embeddings learn faster)
+-	1.272672	8.3	discard	n_head=12 (no improvement, more memory)

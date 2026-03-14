@@ -45,6 +45,7 @@ class CausalSelfAttention(nn.Module):
         self.n_head = n_head
         self.c_attn = nn.Linear(n_embd, 3 * n_embd, bias=False)
         self.c_proj = nn.Linear(n_embd, n_embd, bias=False)
+        self.rope = nn.RoPE(n_embd // n_head)
 
     def __call__(self, x):
         B, T, C = x.shape
@@ -54,6 +55,8 @@ class CausalSelfAttention(nn.Module):
         q = q.reshape(B, T, self.n_head, head_dim).transpose(0, 2, 1, 3)
         k = k.reshape(B, T, self.n_head, head_dim).transpose(0, 2, 1, 3)
         v = v.reshape(B, T, self.n_head, head_dim).transpose(0, 2, 1, 3)
+        q = self.rope(q)
+        k = self.rope(k)
         scale = head_dim ** -0.5
         attn = (q @ k.transpose(0, 1, 3, 2)) * scale
         causal_mask = mx.triu(mx.full((T, T), float('-inf')), k=1)
@@ -91,7 +94,6 @@ class GPT(nn.Module):
     def __init__(self, vocab_size, n_layer, n_head, n_embd, max_seq_len):
         super().__init__()
         self.wte = nn.Embedding(vocab_size, n_embd)
-        self.wpe = nn.Embedding(max_seq_len, n_embd)
         self.blocks = [Block(n_head, n_embd) for _ in range(n_layer)]
         self.ln_f = nn.RMSNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
@@ -100,8 +102,7 @@ class GPT(nn.Module):
 
     def __call__(self, idx):
         B, T = idx.shape
-        pos = mx.arange(T)
-        x = self.wte(idx) + self.wpe(pos)
+        x = self.wte(idx)
         for block in self.blocks:
             x = block(x)
         return self.lm_head(self.ln_f(x))
@@ -137,7 +138,6 @@ def build_optimizer(muon_lr=0.02, adamw_lr=3e-4,
         [muon, adamw],
         [lambda name, w: w.ndim >= 2
          and "wte" not in name
-         and "wpe" not in name
          and "lm_head" not in name]
     )
 

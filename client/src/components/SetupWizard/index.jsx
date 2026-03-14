@@ -11,19 +11,22 @@ export default function SetupWizard({ hardware, onStart }) {
   const [focus, setFocus] = useState([]);
   const [hints, setHints] = useState("");
   const [starting, setStarting] = useState(false);
+  const [error, setError] = useState(null);
 
   const toggleFocus = (key) =>
     setFocus((f) => (f.includes(key) ? f.filter((k) => k !== key) : [...f, key]));
 
   const handleStart = async () => {
     setStarting(true);
+    setError(null);
     try {
       await onStart({
         focusAreas: focus,
         hints,
         branchName: new Date().toISOString().slice(0, 10),
       });
-    } catch {
+    } catch (err) {
+      setError(err.message || "Failed to start session");
       setStarting(false);
     }
   };
@@ -97,13 +100,23 @@ export default function SetupWizard({ hardware, onStart }) {
         />
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="bg-danger-dim border border-danger/30 rounded-xl px-4 py-3 text-sm text-danger font-mono">
+          {error}
+        </div>
+      )}
+
       {/* Start Button */}
       <button
         onClick={handleStart}
         disabled={!hardware || starting}
-        className="w-full py-3.5 rounded-xl font-mono text-sm tracking-wider bg-accent text-surface font-semibold hover:bg-accent/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed glow-green"
+        className="w-full py-3.5 rounded-xl font-mono text-sm tracking-wider bg-accent text-surface font-semibold hover:bg-accent/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed glow-green flex items-center justify-center gap-2"
       >
-        {starting ? "STARTING..." : "START RESEARCH \u2192"}
+        {starting && (
+          <span className="inline-block w-4 h-4 border-2 border-surface/40 border-t-surface rounded-full animate-spin" />
+        )}
+        {starting ? "STARTING SESSION..." : "START RESEARCH \u2192"}
       </button>
     </div>
   );

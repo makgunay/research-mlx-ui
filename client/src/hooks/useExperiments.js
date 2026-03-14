@@ -21,6 +21,9 @@ export function useExperiments(dispatch) {
       case "experiment_started":
         dispatch({ type: "EXPERIMENT_STARTED", payload: msg });
         break;
+      case "heartbeat":
+        dispatch({ type: "HEARTBEAT", payload: msg });
+        break;
       case "error":
         dispatch({ type: "AGENT_LOG", payload: { level: "error", text: msg.message } });
         break;
