@@ -1,0 +1,135 @@
+"""FastAPI server — REST + WebSocket for autoresearch UI."""
+
+import asyncio
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+from server.process_manager import ProcessManager
+from server.git_watcher import GitWatcher
+from server.hardware import detect_hardware
+from server.program_generator import generate_program_md
+
+
+# ─── WebSocket Connection Manager ───────────────────────────────────────────
+
+class ConnectionManager:
+    def __init__(self):
+        self.active: list[WebSocket] = []
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self.active.append(ws)
+
+    def disconnect(self, ws: WebSocket):
+        self.active.remove(ws)
+
+    async def broadcast(self, data: dict):
+        for ws in self.active:
+            try:
+                await ws.send_json(data)
+            except Exception:
+                pass
+
+
+manager = ConnectionManager()
+process_mgr = ProcessManager(manager)
+git_watcher = GitWatcher(manager)
+
+
+# ─── App Lifecycle ───────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    watcher_task = asyncio.create_task(git_watcher.watch())
+    yield
+    watcher_task.cancel()
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ─── WebSocket ───────────────────────────────────────────────────────────────
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+
+# ─── REST Endpoints ──────────────────────────────────────────────────────────
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.get("/api/hardware")
+async def get_hardware():
+    return detect_hardware()
+
+
+class SessionConfig(BaseModel):
+    focusAreas: list[str] = []
+    hints: str = ""
+    agentCommand: str = "claude"
+    branchName: str = "session"
+
+
+@app.post("/api/session/start")
+async def start_session(config: SessionConfig):
+    hardware = detect_hardware()
+    program_md = generate_program_md(
+        focus_areas=config.focusAreas,
+        hints=config.hints,
+        hardware=hardware,
+    )
+    with open("program.md", "w") as f:
+        f.write(program_md)
+
+    await process_mgr.start_session(
+        agent_command=config.agentCommand,
+        branch_name=config.branchName,
+    )
+    return {"status": "started", "branch": config.branchName}
+
+
+@app.post("/api/session/stop")
+async def stop_session():
+    await process_mgr.stop_session()
+    return {"status": "stopped"}
+
+
+@app.get("/api/session/status")
+async def session_status():
+    return process_mgr.get_status()
+
+
+@app.get("/api/experiments")
+async def get_experiments():
+    return git_watcher.get_all_experiments()
+
+
+@app.get("/api/experiments/{commit}")
+async def get_experiment(commit: str):
+    return git_watcher.get_experiment_with_diff(commit)
+
+
+@app.get("/api/results/summary")
+async def get_summary():
+    from server.summarizer import generate_summary
+    experiments = git_watcher.get_all_experiments()
+    return await generate_summary(experiments)

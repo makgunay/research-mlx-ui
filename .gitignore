@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+uv.lock
+
+# Node / Vite
+node_modules/
+client/dist/
+client/.vite/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+credentials.json
+
+# MLX / Training artifacts
+*.npz
+*.safetensors
+*.bin
+data/
+
+# Autoresearch runtime
+results.tsv
+program.md
