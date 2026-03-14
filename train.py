@@ -31,7 +31,7 @@ MUON_LR = 0.02
 ADAMW_LR = 3e-4
 WEIGHT_DECAY = 0.1
 WARMUP_STEPS = 50
-TOTAL_STEPS = 625
+TOTAL_STEPS = 480
 
 # ─── Budget ─────────────────────────────────────────────────────────────────
 TRAINING_BUDGET_SECONDS = 300  # 5 minutes wall clock, excludes warmup/compile
