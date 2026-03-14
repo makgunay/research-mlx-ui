@@ -21,14 +21,22 @@ class GitWatcher:
     def __init__(self, broadcaster, poll_interval: float = 2.0):
         self.broadcaster = broadcaster
         self.poll_interval = poll_interval
-        self._seen_count = 0  # Track by row count, not commit hash
+        self._seen_count = 0
         self._experiments: list[Experiment] = []
+        # Load existing experiments from results.tsv on startup
+        self._load_existing()
+
+    def _load_existing(self):
+        """Load experiments already in results.tsv (e.g. after server restart)."""
+        existing = self._read_results_tsv()
+        if existing:
+            self._experiments = existing
+            self._seen_count = len(existing)
 
     async def watch(self):
         while True:
             await asyncio.sleep(self.poll_interval)
             fresh = self._read_results_tsv()
-            # Only process rows we haven't seen yet (by index)
             if len(fresh) > self._seen_count:
                 new_experiments = fresh[self._seen_count:]
                 self._seen_count = len(fresh)

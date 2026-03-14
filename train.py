@@ -29,7 +29,7 @@ GRAD_ACCUM_STEPS = max(1, TOTAL_BATCH_SIZE // (DEVICE_BATCH_SIZE * MAX_SEQ_LEN))
 # ─── Optimizer ──────────────────────────────────────────────────────────────
 MUON_LR = 0.02
 ADAMW_LR = 1e-3
-WEIGHT_DECAY = 0.1
+WEIGHT_DECAY = 0.01
 WARMUP_STEPS = 50
 TOTAL_STEPS = 480
 

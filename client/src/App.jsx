@@ -132,10 +132,32 @@ export default function App() {
   });
 
   useEffect(() => {
+    // Load hardware
     fetch("/api/hardware")
       .then((r) => r.json())
       .then((hw) => dispatch({ type: "SET_HARDWARE", payload: hw }))
       .catch(() => dispatch({ type: "SET_ERROR", payload: "Failed to connect to server" }));
+
+    // Load existing experiments (survives server restart)
+    fetch("/api/experiments")
+      .then((r) => r.json())
+      .then((exps) => {
+        if (exps?.length > 0) {
+          exps.forEach((exp) => dispatch({ type: "EXPERIMENT_DONE", payload: exp }));
+          dispatch({ type: "SET_VIEW", payload: "dashboard" });
+        }
+      })
+      .catch(() => {});
+
+    // Check if session is active
+    fetch("/api/session/status")
+      .then((r) => r.json())
+      .then((status) => {
+        if (status.active) {
+          dispatch({ type: "SESSION_STARTED", payload: { branch: status.branch } });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const startSession = async (config) => {
