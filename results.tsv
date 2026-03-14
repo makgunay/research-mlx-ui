@@ -1,0 +1,2 @@
+commit	val_bpb	memory_gb	status	description
+baseline	1.361947	7.7	keep	baseline: depth=6 n_embd=512 n_head=8 muon_lr=0.02 adamw_lr=3e-4
