@@ -30,6 +30,8 @@ GRAD_ACCUM_STEPS = max(1, TOTAL_BATCH_SIZE // (DEVICE_BATCH_SIZE * MAX_SEQ_LEN))
 MUON_LR = 0.02
 ADAMW_LR = 3e-4
 WEIGHT_DECAY = 0.1
+WARMUP_STEPS = 50
+TOTAL_STEPS = 625
 
 # ─── Budget ─────────────────────────────────────────────────────────────────
 TRAINING_BUDGET_SECONDS = 300  # 5 minutes wall clock, excludes warmup/compile
@@ -115,10 +117,21 @@ def build_optimizer(muon_lr=0.02, adamw_lr=3e-4,
     """
     MultiOptimizer: Muon for 2D Linear weights, AdamW for everything else.
     Filter excludes embeddings and lm_head from Muon.
+    Uses cosine decay with linear warmup for both optimizers.
     """
-    muon = optim.Muon(learning_rate=muon_lr, momentum=0.95, nesterov=True)
+    muon_schedule = optim.join_schedules(
+        [optim.linear_schedule(0, muon_lr, WARMUP_STEPS),
+         optim.cosine_decay(muon_lr, TOTAL_STEPS - WARMUP_STEPS, 0.1 * muon_lr)],
+        [WARMUP_STEPS]
+    )
+    adamw_schedule = optim.join_schedules(
+        [optim.linear_schedule(0, adamw_lr, WARMUP_STEPS),
+         optim.cosine_decay(adamw_lr, TOTAL_STEPS - WARMUP_STEPS, 0.1 * adamw_lr)],
+        [WARMUP_STEPS]
+    )
+    muon = optim.Muon(learning_rate=muon_schedule, momentum=0.95, nesterov=True)
     adamw = optim.AdamW(
-        learning_rate=adamw_lr, betas=adamw_betas, weight_decay=weight_decay
+        learning_rate=adamw_schedule, betas=adamw_betas, weight_decay=weight_decay
     )
     return optim.MultiOptimizer(
         [muon, adamw],
