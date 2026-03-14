@@ -17,9 +17,9 @@ from mlx.utils import tree_flatten
 from prepare import VOCAB_SIZE, MAX_SEQ_LEN, get_dataloader, evaluate_bpb
 
 # ─── Model Architecture ─────────────────────────────────────────────────────
-DEPTH = 6          # transformer layers (tuned for M3 Max 128GB)
+DEPTH = 4          # transformer layers (tuned for M3 Max 128GB)
 N_HEAD = 8         # attention heads
-N_EMBD = 512       # embedding dimension
+N_EMBD = 768       # embedding dimension
 
 # ─── Training ───────────────────────────────────────────────────────────────
 DEVICE_BATCH_SIZE = 32     # sequences per forward pass
