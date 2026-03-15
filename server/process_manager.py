@@ -178,6 +178,12 @@ class ProcessManager:
 
     async def stop_session(self):
         await self._cleanup()
+        # Broadcast explicitly — _cleanup cancels _stream_task before it can
+        # reach its natural session_stopped broadcast at end of _stream_output.
+        await self.broadcaster.broadcast({
+            "type": "session_stopped",
+            "total_experiments": self._experiment_count,
+        })
 
     def get_status(self) -> dict:
         elapsed = time.time() - self._started_at if self._started_at else 0
