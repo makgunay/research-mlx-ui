@@ -23,10 +23,12 @@ client/dist/
 client/.vite/
 *.tsbuildinfo
 
-# IDE / Claude Code
+# IDE / Claude Code / Internal docs
 .vscode/
 .idea/
 .claude/
+docs/
+plans/
 *.swp
 *.swo
 *~
