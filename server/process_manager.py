@@ -1,6 +1,7 @@
 """Spawns and monitors the agent + training subprocess."""
 
 import asyncio
+import contextlib
 import re
 import subprocess
 import time
@@ -54,25 +55,47 @@ class ProcessManager:
         self._started_at = time.time()
         self._active = True
         self._experiment_count = 0
+        self._last_hypothesis = ""
         Path(".session-active").touch()
 
-        # Spawn agent as subprocess (no shell — prevents command injection)
-        self.process = await asyncio.create_subprocess_exec(
-            agent_command, "--print", "--dangerously-skip-permissions",
-            "Please read program.md and start a new research session",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-            cwd=Path.cwd(),
-        )
+        try:
+            # Spawn agent as subprocess (no shell — prevents command injection)
+            self.process = await asyncio.create_subprocess_exec(
+                agent_command, "--print", "--dangerously-skip-permissions",
+                "Please read program.md and start a new research session",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=Path.cwd(),
+            )
 
-        self._stream_task = asyncio.create_task(self._stream_output())
-        self._heartbeat_task = asyncio.create_task(self._heartbeat())
+            self._stream_task = asyncio.create_task(self._stream_output())
+            self._heartbeat_task = asyncio.create_task(self._heartbeat())
 
-        await self.broadcaster.broadcast({
-            "type": "session_started",
-            "branch": self._branch,
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        })
+            await self.broadcaster.broadcast({
+                "type": "session_started",
+                "branch": self._branch,
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            })
+        except Exception:
+            await self._cleanup()
+            raise
+
+    async def _cleanup(self):
+        """Reset all session state — used on error rollback and stop."""
+        self._active = False
+        Path(".session-active").unlink(missing_ok=True)
+        for task in (self._stream_task, self._heartbeat_task):
+            if task:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+        self._stream_task = None
+        self._heartbeat_task = None
+        if self.process and self.process.returncode is None:
+            self.process.terminate()
+            with contextlib.suppress(asyncio.TimeoutError, ProcessLookupError):
+                await asyncio.wait_for(self.process.wait(), timeout=5.0)
+        self.process = None
 
     async def _heartbeat(self):
         """Emit session heartbeat every 5 seconds so the UI knows we're alive."""
@@ -128,11 +151,13 @@ class ProcessManager:
                 "text": line,
             })
 
-        # Process ended
+        # Process ended naturally
         self._active = False
         Path(".session-active").unlink(missing_ok=True)
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
+        self._heartbeat_task = None
+        self._stream_task = None
         await self.broadcaster.broadcast({
             "type": "session_stopped",
             "total_experiments": self._experiment_count,
@@ -152,16 +177,7 @@ class ProcessManager:
         return "info"
 
     async def stop_session(self):
-        if self.process and self.process.returncode is None:
-            self.process.terminate()
-            try:
-                await asyncio.wait_for(self.process.wait(), timeout=5.0)
-            except asyncio.TimeoutError:
-                self.process.kill()
-        self._active = False
-        Path(".session-active").unlink(missing_ok=True)
-        if self._heartbeat_task:
-            self._heartbeat_task.cancel()
+        await self._cleanup()
 
     def get_status(self) -> dict:
         elapsed = time.time() - self._started_at if self._started_at else 0
