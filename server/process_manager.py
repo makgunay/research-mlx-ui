@@ -14,9 +14,10 @@ TRAINING_TICK_RE = re.compile(
     r"step\s+(\d+)\s*\|\s*loss\s+([\d.]+)\s*\|\s*tok/s\s+([\d,]+)\s*\|\s*elapsed\s+([\d.]+)s"
 )
 
-# Detect when agent starts a training run
+# Detect when agent actually invokes a training run (anchored to command lines,
+# not narrative mentions like "I'll run `uv run train.py`")
 EXPERIMENT_START_RE = re.compile(
-    r"(uv run (?:python )?train\.py|Running.*train\.py|`uv run train\.py`)", re.IGNORECASE
+    r"^\s*(?:\$\s*)?uv\s+run\s+(?:python\s+)?train\.py\b", re.IGNORECASE
 )
 
 # Detect hypothesis from agent reasoning
