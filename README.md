@@ -191,10 +191,10 @@ Both use cosine learning rate decay with linear warmup.
 
 | Chip | RAM | Expected BPB | Throughput |
 |------|-----|-------------|------------|
-| M1 / M2 base | 8 GB | ~1.8-2.0 | ~8K tok/s |
-| M2/M3 Pro | 16-18 GB | ~1.4-1.6 | ~15K tok/s |
-| M3/M4 Pro Max | 32-36 GB | ~1.2-1.4 | ~25K tok/s |
-| M3/M4 Max | 64-128 GB | ~1.0-1.2 | ~33K tok/s |
+| M1 / M2 | 8 GB | ~1.8-2.0 | ~8K tok/s |
+| M2 Pro / M3 Pro | 16-18 GB | ~1.4-1.6 | ~15K tok/s |
+| M3 Pro / M4 Pro | 32-36 GB | ~1.2-1.4 | ~25K tok/s |
+| M3 Max / M4 Max | 64-128 GB | ~1.0-1.2 | ~33K tok/s |
 | M4 Max (best known) | 128 GB | ~0.95-1.0 | ~45K tok/s |
 
 The system auto-detects your hardware and adjusts defaults accordingly.
@@ -216,15 +216,11 @@ research-mlx-ui/
 │   ├── hardware.py         # Apple Silicon detection
 │   ├── program_generator.py # Generates program.md with cumulative context
 │   └── summarizer.py       # Claude API for result summaries
-├── client/                 # React frontend
-│   └── src/
-│       ├── App.jsx         # State management, routing
-│       ├── components/     # SetupWizard, Dashboard, History, Results
-│       └── hooks/          # useWebSocket, useExperiments
-├── docs/
-│   └── HANDOFF.md          # Full technical specification
-└── plans/
-    └── implementation-plan.md
+└── client/                 # React frontend
+    └── src/
+        ├── App.jsx         # State management, routing
+        ├── components/     # SetupWizard, Dashboard, History, Results
+        └── hooks/          # useWebSocket, useExperiments
 ```
 
 ---
