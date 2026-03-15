@@ -83,6 +83,8 @@ class ProcessManager:
     async def _cleanup(self):
         """Reset all session state — used on error rollback and stop."""
         self._active = False
+        self._started_at = None
+        self._branch = None
         Path(".session-active").unlink(missing_ok=True)
         for task in (self._stream_task, self._heartbeat_task):
             if task:
