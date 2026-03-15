@@ -10,7 +10,7 @@ def generate_program_md(focus_areas: list[str], hints: str, hardware: dict,
     memory = hardware.get("memory", "Unknown")
     rec = hardware.get("recommendations", {})
     muon_lr = rec.get("muon_lr", 0.02)
-    adamw_lr = rec.get("adamw_lr", "3e-4")
+    adamw_lr = rec.get("adamw_lr", 1e-3)
 
     focus_block = _build_focus_block(focus_areas)
     hints_block = f"\n## Human Hints\n{hints.strip()}\n" if hints.strip() else ""

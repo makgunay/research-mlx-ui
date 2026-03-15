@@ -157,8 +157,11 @@ class ProcessManager:
                 "text": line,
             })
 
-        # Process ended naturally
+        # Process ended naturally — reset all state (mirrors _cleanup)
         self._active = False
+        self._started_at = None
+        self._branch = None
+        self.process = None
         Path(".session-active").unlink(missing_ok=True)
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
