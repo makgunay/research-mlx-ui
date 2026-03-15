@@ -99,7 +99,10 @@ class CreateProjectConfig(BaseModel):
 
 @app.post("/api/projects")
 async def create_project(config: CreateProjectConfig):
-    return project_manager.create_project(config.name, config.forkFrom)
+    result = project_manager.create_project(config.name, config.forkFrom)
+    # create_project internally activates the new project, swapping results.tsv
+    git_watcher.reload()
+    return result
 
 
 @app.post("/api/projects/{name}/activate")
