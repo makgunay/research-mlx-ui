@@ -71,7 +71,11 @@ export default function SetupWizard({ hardware, onStart }) {
   const handleSwitchProject = async (name) => {
     setError(null);
     try {
-      await fetch(`/api/projects/${name}/activate`, { method: "POST" });
+      const res = await fetch(`/api/projects/${name}/activate`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to switch project");
+      }
       const updated = await fetch("/api/projects").then((r) => r.json());
       setProjects(updated);
     } catch (err) {
@@ -83,7 +87,11 @@ export default function SetupWizard({ hardware, onStart }) {
     if (!confirm(`Delete project "${name}"? This removes its results and train.py snapshot.`)) return;
     setError(null);
     try {
-      await fetch(`/api/projects/${name}`, { method: "DELETE" });
+      const res = await fetch(`/api/projects/${name}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.detail || "Failed to delete project");
+      }
       const updated = await fetch("/api/projects").then((r) => r.json());
       setProjects(updated);
     } catch (err) {
