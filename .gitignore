@@ -23,9 +23,13 @@ client/dist/
 client/.vite/
 *.tsbuildinfo
 
-# IDE
+# IDE / Claude Code / Internal docs
 .vscode/
 .idea/
+.claude/
+CLAUDE.md
+docs/
+plans/
 *.swp
 *.swo
 *~
@@ -45,4 +49,8 @@ data/
 
 # Autoresearch runtime
 results.tsv
+results-*.tsv
+trainpy-*.py
+.active-project
+.session-active
 program.md

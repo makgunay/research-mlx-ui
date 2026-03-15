@@ -17,9 +17,9 @@ from mlx.utils import tree_flatten
 from prepare import VOCAB_SIZE, MAX_SEQ_LEN, get_dataloader, evaluate_bpb
 
 # ─── Model Architecture ─────────────────────────────────────────────────────
-DEPTH = 6          # transformer layers (tuned for M3 Max 128GB)
+DEPTH = 4          # transformer layers (tuned for M3 Max 128GB)
 N_HEAD = 8         # attention heads
-N_EMBD = 512       # embedding dimension
+N_EMBD = 768       # embedding dimension
 
 # ─── Training ───────────────────────────────────────────────────────────────
 DEVICE_BATCH_SIZE = 32     # sequences per forward pass
@@ -28,8 +28,10 @@ GRAD_ACCUM_STEPS = max(1, TOTAL_BATCH_SIZE // (DEVICE_BATCH_SIZE * MAX_SEQ_LEN))
 
 # ─── Optimizer ──────────────────────────────────────────────────────────────
 MUON_LR = 0.02
-ADAMW_LR = 3e-4
-WEIGHT_DECAY = 0.1
+ADAMW_LR = 1e-3
+WEIGHT_DECAY = 0.01
+WARMUP_STEPS = 50
+TOTAL_STEPS = 480
 
 # ─── Budget ─────────────────────────────────────────────────────────────────
 TRAINING_BUDGET_SECONDS = 300  # 5 minutes wall clock, excludes warmup/compile
@@ -43,6 +45,7 @@ class CausalSelfAttention(nn.Module):
         self.n_head = n_head
         self.c_attn = nn.Linear(n_embd, 3 * n_embd, bias=False)
         self.c_proj = nn.Linear(n_embd, n_embd, bias=False)
+        self.rope = nn.RoPE(n_embd // n_head)
 
     def __call__(self, x):
         B, T, C = x.shape
@@ -52,6 +55,8 @@ class CausalSelfAttention(nn.Module):
         q = q.reshape(B, T, self.n_head, head_dim).transpose(0, 2, 1, 3)
         k = k.reshape(B, T, self.n_head, head_dim).transpose(0, 2, 1, 3)
         v = v.reshape(B, T, self.n_head, head_dim).transpose(0, 2, 1, 3)
+        q = self.rope(q)
+        k = self.rope(k)
         scale = head_dim ** -0.5
         attn = (q @ k.transpose(0, 1, 3, 2)) * scale
         causal_mask = mx.triu(mx.full((T, T), float('-inf')), k=1)
@@ -89,7 +94,6 @@ class GPT(nn.Module):
     def __init__(self, vocab_size, n_layer, n_head, n_embd, max_seq_len):
         super().__init__()
         self.wte = nn.Embedding(vocab_size, n_embd)
-        self.wpe = nn.Embedding(max_seq_len, n_embd)
         self.blocks = [Block(n_head, n_embd) for _ in range(n_layer)]
         self.ln_f = nn.RMSNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
@@ -98,8 +102,7 @@ class GPT(nn.Module):
 
     def __call__(self, idx):
         B, T = idx.shape
-        pos = mx.arange(T)
-        x = self.wte(idx) + self.wpe(pos)
+        x = self.wte(idx)
         for block in self.blocks:
             x = block(x)
         return self.lm_head(self.ln_f(x))
@@ -110,21 +113,31 @@ class GPT(nn.Module):
 
 # ─── Optimizer Setup ─────────────────────────────────────────────────────────
 
-def build_optimizer(muon_lr=0.02, adamw_lr=3e-4,
-                    adamw_betas=(0.9, 0.95), weight_decay=0.1):
+def build_optimizer(muon_lr=MUON_LR, adamw_lr=ADAMW_LR,
+                    adamw_betas=(0.9, 0.95), weight_decay=WEIGHT_DECAY):
     """
     MultiOptimizer: Muon for 2D Linear weights, AdamW for everything else.
     Filter excludes embeddings and lm_head from Muon.
+    Uses cosine decay with linear warmup for both optimizers.
     """
-    muon = optim.Muon(learning_rate=muon_lr, momentum=0.95, nesterov=True)
+    muon_schedule = optim.join_schedules(
+        [optim.linear_schedule(0, muon_lr, WARMUP_STEPS),
+         optim.cosine_decay(muon_lr, TOTAL_STEPS - WARMUP_STEPS, 0.1 * muon_lr)],
+        [WARMUP_STEPS]
+    )
+    adamw_schedule = optim.join_schedules(
+        [optim.linear_schedule(0, adamw_lr, WARMUP_STEPS),
+         optim.cosine_decay(adamw_lr, TOTAL_STEPS - WARMUP_STEPS, 0.1 * adamw_lr)],
+        [WARMUP_STEPS]
+    )
+    muon = optim.Muon(learning_rate=muon_schedule, momentum=0.95, nesterov=True)
     adamw = optim.AdamW(
-        learning_rate=adamw_lr, betas=adamw_betas, weight_decay=weight_decay
+        learning_rate=adamw_schedule, betas=adamw_betas, weight_decay=weight_decay
     )
     return optim.MultiOptimizer(
         [muon, adamw],
         [lambda name, w: w.ndim >= 2
          and "wte" not in name
-         and "wpe" not in name
          and "lm_head" not in name]
     )
 
