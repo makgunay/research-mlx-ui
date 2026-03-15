@@ -35,7 +35,7 @@ export default function History({ experiments }) {
   const [diffData, setDiffData] = useState({});
 
   const toggleDiff = async (commit) => {
-    if (!commit || commit === "-") return;
+    if (!commit || commit === "-" || commit === "baseline") return;
     if (expandedCommit === commit) {
       setExpandedCommit(null);
       return;
@@ -72,6 +72,7 @@ export default function History({ experiments }) {
       {[...experiments].reverse().map((exp) => (
         <div key={`${exp.n}-${exp.val_bpb}`} className="bg-surface-raised border border-border-dim rounded-xl overflow-hidden">
           <button
+            type="button"
             onClick={() => toggleDiff(exp.commit)}
             className={`w-full px-5 py-3 flex items-center gap-4 text-left hover:bg-surface-overlay/50 transition-colors ${
               exp.commit === "-" || exp.commit === "baseline" ? "cursor-default" : ""

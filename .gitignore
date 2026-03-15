@@ -48,4 +48,5 @@ results.tsv
 results-*.tsv
 trainpy-*.py
 .active-project
+.session-active
 program.md

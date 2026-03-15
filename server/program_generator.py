@@ -15,7 +15,7 @@ def generate_program_md(focus_areas: list[str], hints: str, hardware: dict,
     focus_block = _build_focus_block(focus_areas)
     hints_block = f"\n## Human Hints\n{hints.strip()}\n" if hints.strip() else ""
     prior_block = _build_prior_context()
-    strategy_block = _build_strategy(prior_block != "", max_experiments)
+    strategy_block = _build_strategy(has_prior=prior_block != "", max_experiments=max_experiments)
 
     return f"""# autoresearch-mlx — Research Session
 
@@ -96,7 +96,7 @@ def _build_prior_context() -> str:
                     "description": row.get("description", "").strip(),
                     "memory_gb": float(row.get("memory_gb", 0)),
                 })
-            except (ValueError, KeyError):
+            except ValueError:
                 continue
 
     if not experiments:
@@ -129,7 +129,7 @@ def _build_prior_context() -> str:
     return "\n".join(lines)
 
 
-def _build_strategy(has_prior: bool, max_experiments: int) -> str:
+def _build_strategy(*, has_prior: bool, max_experiments: int) -> str:
     """Generate adaptive strategy instructions."""
     if not has_prior:
         return f"""

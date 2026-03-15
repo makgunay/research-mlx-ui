@@ -56,12 +56,12 @@ DEV=1 ./start.sh
 
 ## Project system
 
-Research is organized into projects. Each project has isolated results and train.py:
+Research is organized into projects. Each project has isolated results and train.py, stored as files at the **repo root** (not in a subdirectory):
 
 ```
-results-{name}.tsv     # experiment history for this project
-trainpy-{name}.py      # train.py snapshot for this project
-.active-project        # text file with current project name
+results-{name}.tsv     # experiment history for this project (repo root)
+trainpy-{name}.py      # train.py snapshot for this project (repo root)
+.active-project        # text file with current project name (repo root)
 ```
 
 - `GET /api/projects` — list all projects with stats

@@ -28,7 +28,7 @@ GRAD_ACCUM_STEPS = max(1, TOTAL_BATCH_SIZE // (DEVICE_BATCH_SIZE * MAX_SEQ_LEN))
 
 # ─── Optimizer ──────────────────────────────────────────────────────────────
 MUON_LR = 0.02
-ADAMW_LR = 1e-3
+ADAMW_LR = 3e-3
 WEIGHT_DECAY = 0.01
 WARMUP_STEPS = 50
 TOTAL_STEPS = 480
@@ -113,8 +113,8 @@ class GPT(nn.Module):
 
 # ─── Optimizer Setup ─────────────────────────────────────────────────────────
 
-def build_optimizer(muon_lr=0.02, adamw_lr=3e-4,
-                    adamw_betas=(0.9, 0.95), weight_decay=0.1):
+def build_optimizer(muon_lr=MUON_LR, adamw_lr=ADAMW_LR,
+                    adamw_betas=(0.9, 0.95), weight_decay=WEIGHT_DECAY):
     """
     MultiOptimizer: Muon for 2D Linear weights, AdamW for everything else.
     Filter excludes embeddings and lm_head from Muon.

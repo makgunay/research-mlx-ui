@@ -11,7 +11,10 @@ export function useWebSocket(url, onMessage, { onOpen, onClose } = {}) {
   onCloseRef.current = onClose;
 
   useEffect(() => {
+    let disposed = false;
+
     function connect() {
+      if (disposed) return;
       wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
@@ -27,6 +30,7 @@ export function useWebSocket(url, onMessage, { onOpen, onClose } = {}) {
       };
 
       wsRef.current.onclose = () => {
+        if (disposed) return;
         onCloseRef.current?.();
         reconnectTimer.current = setTimeout(connect, 2000);
       };
@@ -36,6 +40,7 @@ export function useWebSocket(url, onMessage, { onOpen, onClose } = {}) {
 
     connect();
     return () => {
+      disposed = true;
       clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };

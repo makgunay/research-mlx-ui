@@ -7,7 +7,7 @@ const FOCUS_OPTIONS = [
   { key: "optimizer", label: "Optimizer", icon: "\u2699\uFE0F", desc: "Tune Muon/AdamW" },
 ];
 
-export default function SetupWizard({ hardware, onStart, priorExperiments = [] }) {
+export default function SetupWizard({ hardware, onStart }) {
   const [projects, setProjects] = useState([]);
   const [focus, setFocus] = useState([]);
   const [hints, setHints] = useState("");
@@ -61,10 +61,8 @@ export default function SetupWizard({ hardware, onStart, priorExperiments = [] }
       setShowNewProject(false);
       setNewProjectName("");
       setForkFrom("");
-      // Reload projects and experiments
       const updated = await fetch("/api/projects").then((r) => r.json());
       setProjects(updated);
-      window.location.reload();
     } catch (err) {
       setError(err.message);
     }
@@ -74,7 +72,8 @@ export default function SetupWizard({ hardware, onStart, priorExperiments = [] }
     setError(null);
     try {
       await fetch(`/api/projects/${name}/activate`, { method: "POST" });
-      window.location.reload();
+      const updated = await fetch("/api/projects").then((r) => r.json());
+      setProjects(updated);
     } catch (err) {
       setError(err.message);
     }
@@ -109,6 +108,7 @@ export default function SetupWizard({ hardware, onStart, priorExperiments = [] }
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-mono tracking-widest text-text-muted">PROJECTS</span>
           <button
+            type="button"
             onClick={() => setShowNewProject(!showNewProject)}
             className="text-[10px] font-mono text-accent hover:text-accent/80 transition-colors"
           >
@@ -158,6 +158,7 @@ export default function SetupWizard({ hardware, onStart, priorExperiments = [] }
               </div>
             </div>
             <button
+              type="button"
               onClick={handleCreateProject}
               disabled={!newProjectName || newProjectName.length < 2}
               className="w-full py-2 rounded-lg bg-accent text-surface text-sm font-mono font-semibold disabled:opacity-40"
@@ -177,12 +178,15 @@ export default function SetupWizard({ hardware, onStart, priorExperiments = [] }
           {projects.map((p) => (
             <div
               key={p.name}
+              role={p.active ? undefined : "button"}
+              tabIndex={p.active ? undefined : 0}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                 p.active
                   ? "bg-accent-dim border border-accent/20"
                   : "bg-surface-overlay border border-border-dim hover:border-border cursor-pointer"
               }`}
               onClick={() => !p.active && handleSwitchProject(p.name)}
+              onKeyDown={(e) => { if (!p.active && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleSwitchProject(p.name); } }}
             >
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.active ? "bg-accent" : "bg-discard"}`} />
               <span className={`text-sm font-mono flex-1 ${p.active ? "text-accent" : "text-text-secondary"}`}>
@@ -198,6 +202,7 @@ export default function SetupWizard({ hardware, onStart, priorExperiments = [] }
               )}
               {!p.active && p.experiments === 0 && (
                 <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); handleDeleteProject(p.name); }}
                   className="text-text-muted hover:text-danger text-xs transition-colors"
                 >

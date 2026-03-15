@@ -97,7 +97,7 @@ Green dots are improvements that were kept. Gray dots are changes that didn't he
 
 ### The three-layer stack
 
-```
+```text
 Browser (React + Tailwind + Recharts)
     |
     | WebSocket (live data) + REST (control)
@@ -203,7 +203,7 @@ The system auto-detects your hardware and adjusts defaults accordingly.
 
 ## Project structure
 
-```
+```text
 research-mlx-ui/
 ├── prepare.py              # Data prep: TinyStories download, BPE tokenizer, dataloader
 ├── train.py                # GPT model + Muon/AdamW + training loop (agent modifies this)

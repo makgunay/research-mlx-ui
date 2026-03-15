@@ -90,7 +90,9 @@ def create_project(name: str, fork_from: str | None = None) -> dict:
     _results_path(name).write_text(RESULTS_HEADER)
 
     # Get train.py: fork from another project, or baseline from git
-    if fork_from and _trainpy_path(fork_from).exists():
+    if fork_from:
+        if not _trainpy_path(fork_from).exists():
+            raise ValueError(f"Fork source '{fork_from}' has no train.py snapshot.")
         shutil.copy(_trainpy_path(fork_from), _trainpy_path(name))
     else:
         # Get baseline train.py from first commit
@@ -114,8 +116,15 @@ def create_project(name: str, fork_from: str | None = None) -> dict:
     return _read_project_stats(name)
 
 
+def is_session_active() -> bool:
+    """Check if an agent session is currently running (process_manager sets this)."""
+    return Path(".session-active").exists()
+
+
 def activate_project(name: str) -> dict:
     """Switch to a project: save current state, restore target state."""
+    if is_session_active():
+        raise RuntimeError("Cannot switch projects while a session is running. Stop the session first.")
     if not _results_path(name).exists():
         raise ValueError(f"Project '{name}' does not exist.")
 
@@ -170,27 +179,6 @@ def delete_project(name: str, prune_branches: bool = False) -> dict:
 
     return removed
 
-
-def get_project_results(name: str) -> list[dict]:
-    """Read a project's results.tsv for context (used by program_generator for forks)."""
-    path = _results_path(name)
-    if not path.exists():
-        return []
-
-    experiments = []
-    with open(path, newline="") as f:
-        reader = csv.DictReader(f, delimiter="\t")
-        for row in reader:
-            try:
-                experiments.append({
-                    "val_bpb": float(row.get("val_bpb", 0)),
-                    "status": row.get("status", "").strip(),
-                    "description": row.get("description", "").strip(),
-                })
-            except (ValueError, KeyError):
-                continue
-
-    return experiments
 
 
 def save_active_state():

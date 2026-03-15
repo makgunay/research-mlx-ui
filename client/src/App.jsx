@@ -58,9 +58,9 @@ function reducer(state, action) {
       };
 
     case "EXPERIMENT_DONE": {
-      // Dedup: skip if we already have this experiment (by description + val_bpb)
+      // Dedup: skip if we already have this experiment
       const isDupe = state.experiments.some(
-        (e) => e.val_bpb === action.payload.val_bpb && e.description === action.payload.description
+        (e) => e.commit === action.payload.commit && e.val_bpb === action.payload.val_bpb
       );
       if (isDupe) return state;
 
@@ -96,7 +96,7 @@ function reducer(state, action) {
           ...current,
           ticks: [
             ...current.ticks.slice(-100),
-            { step: action.payload.step, loss: action.payload.loss, elapsed: action.payload.elapsed_seconds },
+            { step: action.payload.step, loss: action.payload.loss, elapsed: action.payload.elapsed_seconds, tokens_per_sec: action.payload.tokens_per_sec },
           ],
         },
       };
@@ -145,7 +145,7 @@ export default function App() {
       .then((r) => r.json())
       .then((exps) => {
         if (exps?.length > 0) {
-          exps.forEach((exp) => dispatch({ type: "EXPERIMENT_DONE", payload: exp }));
+          for (const exp of exps) dispatch({ type: "EXPERIMENT_DONE", payload: exp });
           dispatch({ type: "SET_VIEW", payload: "dashboard" });
         }
       })
@@ -187,7 +187,7 @@ export default function App() {
       {state.error && (
         <div className="fixed top-4 right-4 z-[100] bg-danger-dim border border-danger/30 rounded-lg px-4 py-3 flex items-center gap-3 max-w-sm animate-in">
           <span className="text-danger text-sm">{state.error}</span>
-          <button onClick={() => dispatch({ type: "CLEAR_ERROR" })} className="text-danger/60 hover:text-danger text-xs">
+          <button type="button" onClick={() => dispatch({ type: "CLEAR_ERROR" })} className="text-danger/60 hover:text-danger text-xs">
             {"\u2715"}
           </button>
         </div>
@@ -208,6 +208,7 @@ export default function App() {
         <nav className="flex gap-0.5">
           {NAV.map(({ key, label }) => (
             <button
+              type="button"
               key={key}
               onClick={() => dispatch({ type: "SET_VIEW", payload: key })}
               className={`px-3 py-1.5 rounded text-[11px] font-mono tracking-widest transition-all relative ${
@@ -251,7 +252,7 @@ export default function App() {
       </header>
 
       <main className="p-6 max-w-[1600px] mx-auto">
-        {state.view === "setup" && <SetupWizard hardware={state.hardware} onStart={startSession} priorExperiments={state.experiments} />}
+        {state.view === "setup" && <SetupWizard hardware={state.hardware} onStart={startSession} />}
         {state.view === "dashboard" && (
           <Dashboard
             session={state.session}

@@ -10,3 +10,4 @@ b9e2a19	1.313329	7.4	keep	fix cosine schedule TOTAL_STEPS=480 to match new arch
 f07f891	1.076188	7.8	keep	RoPE positional encoding (replaces learned wpe)
 -	1.136614	10.9	discard	depth=6 with RoPE (too slow, only 342 steps)
 -	1.149913	14.8	discard	batch_size=64 (halved steps, worse despite better per-step)
+3ebfafa	1.069638	7.8	keep	weight_decay=0.01 (less regularization for short training)

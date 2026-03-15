@@ -53,6 +53,7 @@ class ProcessManager:
         self._started_at = time.time()
         self._active = True
         self._experiment_count = 0
+        Path(".session-active").touch()
 
         # Spawn agent as subprocess (no shell — prevents command injection)
         self.process = await asyncio.create_subprocess_exec(
@@ -128,12 +129,12 @@ class ProcessManager:
 
         # Process ended
         self._active = False
+        Path(".session-active").unlink(missing_ok=True)
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
         await self.broadcaster.broadcast({
             "type": "session_stopped",
             "total_experiments": self._experiment_count,
-            "best_val_bpb": 0,
         })
 
     @staticmethod
@@ -157,6 +158,7 @@ class ProcessManager:
             except asyncio.TimeoutError:
                 self.process.kill()
         self._active = False
+        Path(".session-active").unlink(missing_ok=True)
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
 
