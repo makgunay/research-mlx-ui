@@ -27,6 +27,7 @@ client/.vite/
 .vscode/
 .idea/
 .claude/
+CLAUDE.md
 docs/
 plans/
 *.swp
