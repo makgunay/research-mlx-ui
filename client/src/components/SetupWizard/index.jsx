@@ -131,7 +131,7 @@ export default function SetupWizard({ hardware, onStart, onProjectSwitch }) {
           <div className="bg-surface-overlay border border-border-dim rounded-lg p-4 space-y-3">
             <input
               value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              onChange={(e) => setNewProjectName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/^-+/, ""))}
               placeholder="project-name"
               className="w-full bg-surface border border-border-dim rounded-lg px-3 py-2 text-sm font-mono text-text-primary placeholder-text-muted focus:outline-none focus:border-accent/50"
             />

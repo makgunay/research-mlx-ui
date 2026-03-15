@@ -13,7 +13,7 @@ RESULTS_HEADER = "commit\tval_bpb\tmemory_gb\tstatus\tdescription\n"
 
 
 def _valid_name(name: str) -> bool:
-    return bool(re.match(r"^[a-z0-9][a-z0-9-]{0,48}[a-z0-9]$", name))
+    return bool(re.match(r"^[a-z0-9]([a-z0-9-]{0,48}[a-z0-9])?$", name))
 
 
 def _results_path(name: str) -> Path:
@@ -110,8 +110,13 @@ def create_project(name: str, fork_from: str | None = None) -> dict:
         elif TRAIN_FILE.exists():
             shutil.copy(TRAIN_FILE, _trainpy_path(name))
 
-    # Activate the new project
-    activate_project(name)
+    # Activate the new project — clean up files if activation fails
+    try:
+        activate_project(name)
+    except Exception:
+        _results_path(name).unlink(missing_ok=True)
+        _trainpy_path(name).unlink(missing_ok=True)
+        raise
 
     return _read_project_stats(name)
 

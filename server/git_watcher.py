@@ -23,7 +23,7 @@ class GitWatcher:
         self.poll_interval = poll_interval
         self._seen_count = 0
         self._experiments: list[Experiment] = []
-        # Load existing experiments from results.tsv on startup
+        self._generation = 0  # incremented on reload to detect stale iterations
         self._load_existing()
 
     def _load_existing(self):
@@ -34,16 +34,22 @@ class GitWatcher:
 
     def reload(self):
         """Reload experiments from results.tsv (called on project switch)."""
+        self._generation += 1
         self._load_existing()
 
     async def watch(self):
         while True:
             await asyncio.sleep(self.poll_interval)
+            gen = self._generation
             fresh = self._read_results_tsv()
             if len(fresh) > self._seen_count:
                 new_experiments = fresh[self._seen_count:]
                 self._seen_count = len(fresh)
                 for exp in new_experiments:
+                    # If reload() was called during broadcast, stop processing
+                    # stale experiments from the old project
+                    if self._generation != gen:
+                        break
                     self._experiments.append(exp)
                     await self.broadcaster.broadcast({
                         "type": "experiment_done",
