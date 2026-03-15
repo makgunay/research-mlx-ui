@@ -123,6 +123,8 @@ def is_session_active() -> bool:
 
 def activate_project(name: str) -> dict:
     """Switch to a project: save current state, restore target state."""
+    if not _valid_name(name):
+        raise ValueError(f"Invalid project name: '{name}'.")
     if is_session_active():
         raise RuntimeError("Cannot switch projects while a session is running. Stop the session first.")
     if not _results_path(name).exists():
@@ -150,6 +152,8 @@ def activate_project(name: str) -> dict:
 
 def delete_project(name: str, prune_branches: bool = False) -> dict:
     """Delete a project and optionally its git branches."""
+    if not _valid_name(name):
+        raise ValueError(f"Invalid project name: '{name}'.")
     active = get_active_project()
     if name == active:
         raise ValueError("Cannot delete the active project. Switch to another first.")

@@ -48,5 +48,5 @@ def _fallback_hardware() -> dict:
         "chip": "Apple Silicon (detection failed)",
         "memory": "Unknown",
         "recommendations": {"depth": 4, "max_seq_len": 256, "device_batch_size": 8,
-                            "muon_lr": 0.02, "adamw_lr": 3e-4},
+                            "muon_lr": 0.02, "adamw_lr": 5e-4},
     }
