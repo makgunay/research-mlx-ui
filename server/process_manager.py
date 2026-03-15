@@ -93,8 +93,12 @@ class ProcessManager:
         self._heartbeat_task = None
         if self.process and self.process.returncode is None:
             self.process.terminate()
-            with contextlib.suppress(asyncio.TimeoutError, ProcessLookupError):
+            try:
                 await asyncio.wait_for(self.process.wait(), timeout=5.0)
+            except asyncio.TimeoutError:
+                self.process.kill()  # escalate SIGTERM → SIGKILL
+            except ProcessLookupError:
+                pass  # already exited
         self.process = None
 
     async def _heartbeat(self):
