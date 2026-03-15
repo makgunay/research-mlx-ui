@@ -7,7 +7,7 @@ const FOCUS_OPTIONS = [
   { key: "optimizer", label: "Optimizer", icon: "\u2699\uFE0F", desc: "Tune Muon/AdamW" },
 ];
 
-export default function SetupWizard({ hardware, onStart }) {
+export default function SetupWizard({ hardware, onStart, onProjectSwitch }) {
   const [projects, setProjects] = useState([]);
   const [focus, setFocus] = useState([]);
   const [hints, setHints] = useState("");
@@ -63,6 +63,7 @@ export default function SetupWizard({ hardware, onStart }) {
       setForkFrom("");
       const updated = await fetch("/api/projects").then((r) => r.json());
       setProjects(updated);
+      onProjectSwitch?.();
     } catch (err) {
       setError(err.message);
     }
@@ -78,6 +79,7 @@ export default function SetupWizard({ hardware, onStart }) {
       }
       const updated = await fetch("/api/projects").then((r) => r.json());
       setProjects(updated);
+      onProjectSwitch?.();
     } catch (err) {
       setError(err.message);
     }

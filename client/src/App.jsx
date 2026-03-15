@@ -26,6 +26,8 @@ function reducer(state, action) {
       return { ...state, view: action.payload };
     case "SET_PROJECT":
       return { ...state, session: { ...state.session, project: action.payload } };
+    case "RESET_EXPERIMENTS":
+      return { ...state, experiments: [], agentLog: [], currentExperiment: null, bestResult: null };
     case "SET_ERROR":
       return { ...state, error: action.payload };
     case "CLEAR_ERROR":
@@ -181,6 +183,16 @@ export default function App() {
 
   const stopSession = () => fetch("/api/session/stop", { method: "POST" });
 
+  const reloadExperiments = async () => {
+    dispatch({ type: "RESET_EXPERIMENTS" });
+    try {
+      const exps = await fetch("/api/experiments").then((r) => r.json());
+      if (exps?.length > 0) {
+        for (const exp of exps) dispatch({ type: "EXPERIMENT_DONE", payload: exp });
+      }
+    } catch {}
+  };
+
   return (
     <div className="min-h-screen bg-surface noise-bg">
       {/* Error Toast */}
@@ -252,7 +264,7 @@ export default function App() {
       </header>
 
       <main className="p-6 max-w-[1600px] mx-auto">
-        {state.view === "setup" && <SetupWizard hardware={state.hardware} onStart={startSession} />}
+        {state.view === "setup" && <SetupWizard hardware={state.hardware} onStart={startSession} onProjectSwitch={reloadExperiments} />}
         {state.view === "dashboard" && (
           <Dashboard
             session={state.session}
