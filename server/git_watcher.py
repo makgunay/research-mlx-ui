@@ -29,9 +29,12 @@ class GitWatcher:
     def _load_existing(self):
         """Load experiments already in results.tsv (e.g. after server restart)."""
         existing = self._read_results_tsv()
-        if existing:
-            self._experiments = existing
-            self._seen_count = len(existing)
+        self._experiments = existing
+        self._seen_count = len(existing)
+
+    def reload(self):
+        """Reload experiments from results.tsv (called on project switch)."""
+        self._load_existing()
 
     async def watch(self):
         while True:

@@ -24,6 +24,8 @@ function reducer(state, action) {
       return { ...state, hardware: action.payload };
     case "SET_VIEW":
       return { ...state, view: action.payload };
+    case "SET_PROJECT":
+      return { ...state, session: { ...state.session, project: action.payload } };
     case "SET_ERROR":
       return { ...state, error: action.payload };
     case "CLEAR_ERROR":
@@ -37,7 +39,7 @@ function reducer(state, action) {
       return {
         ...state,
         view: "dashboard",
-        session: { active: true, branch: action.payload.branch, startedAt: Date.now(), elapsedSeconds: 0 },
+        session: { active: true, branch: action.payload.branch, project: action.payload.project || state.session.project, startedAt: Date.now(), elapsedSeconds: 0 },
         error: null,
       };
     case "SESSION_STOPPED":
@@ -154,7 +156,9 @@ export default function App() {
       .then((r) => r.json())
       .then((status) => {
         if (status.active) {
-          dispatch({ type: "SESSION_STARTED", payload: { branch: status.branch } });
+          dispatch({ type: "SESSION_STARTED", payload: { branch: status.branch, project: status.project } });
+        } else if (status.project) {
+          dispatch({ type: "SET_PROJECT", payload: status.project });
         }
       })
       .catch(() => {});
@@ -233,6 +237,11 @@ export default function App() {
               LIVE {formatElapsed(state.session.elapsedSeconds)}
             </span>
           )}
+          {state.session.project && (
+            <span className="font-mono text-[10px] text-text-secondary tracking-wide px-2 py-0.5 rounded bg-surface-overlay border border-border-dim">
+              {state.session.project}
+            </span>
+          )}
           {state.hardware && (
             <span className="font-mono text-[10px] text-text-muted tracking-wide">
               {state.hardware.chip} / {state.hardware.memory}
@@ -242,7 +251,7 @@ export default function App() {
       </header>
 
       <main className="p-6 max-w-[1600px] mx-auto">
-        {state.view === "setup" && <SetupWizard hardware={state.hardware} onStart={startSession} />}
+        {state.view === "setup" && <SetupWizard hardware={state.hardware} onStart={startSession} priorExperiments={state.experiments} />}
         {state.view === "dashboard" && (
           <Dashboard
             session={state.session}

@@ -45,4 +45,7 @@ data/
 
 # Autoresearch runtime
 results.tsv
+results-*.tsv
+trainpy-*.py
+.active-project
 program.md
