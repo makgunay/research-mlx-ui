@@ -35,7 +35,7 @@ Extract from the pasted issue:
 
 ### 2.1 Locate the Code
 
-```
+```text
 1. Read the file(s) mentioned in the issue
 2. Navigate to the specific line numbers
 3. Understand the surrounding context (read 20-30 lines around)
@@ -44,7 +44,7 @@ Extract from the pasted issue:
 ### 2.2 Confirm or Reject
 
 Ask yourself:
-```
+```text
 □ Does this code actually exist as described?
 □ Is the issue a real problem or a tool misunderstanding?
 □ Could this be intentional behavior?
@@ -82,7 +82,7 @@ Load `docs/HANDOFF.md` for:
 
 Use Ref MCP for external library/framework guidance:
 
-```
+```text
 mcp__Ref__ref_search_documentation: "MLX <topic>" or "FastAPI <topic>" or "React <topic>"
 mcp__Ref__ref_read_url: <url from search>
 ```
@@ -100,7 +100,7 @@ mcp__Ref__ref_read_url: <url from search>
 ### 4.1 Plan the Fix
 
 Before changing code:
-```
+```text
 1. Identify the minimal change needed
 2. Consider side effects
 3. Check if related code needs updates
@@ -151,7 +151,7 @@ kill %1
 #### Post-Fix Review Checklist
 
 **Code Quality**
-```
+```text
 □ Follows CLAUDE.md patterns
 □ No hardcoded secrets or credentials
 □ Functions focused and readable
@@ -159,7 +159,7 @@ kill %1
 ```
 
 **MLX Specifics** (if training code)
-```
+```text
 □ Single mx.eval() per training step
 □ No premature evaluation
 □ Pure functions for mx.compile
@@ -168,7 +168,7 @@ kill %1
 ```
 
 **Server Specifics** (if server code)
-```
+```text
 □ No command injection (subprocess_exec not subprocess_shell)
 □ Pydantic models for API inputs
 □ WebSocket errors handled gracefully
@@ -176,7 +176,7 @@ kill %1
 ```
 
 **Frontend Specifics** (if React code)
-```
+```text
 □ No reconnection loops in useWebSocket (use refs for callbacks)
 □ Experiments deduped in reducer
 □ Error states shown to user (not swallowed)
@@ -184,7 +184,7 @@ kill %1
 ```
 
 **Security**
-```
+```text
 □ No hardcoded API keys
 □ Agent commands validated against ALLOWED_AGENTS allowlist
 □ User input sanitized before use in subprocess/file paths
@@ -277,14 +277,14 @@ kill %1
 ## Invocation
 
 **Standard usage**:
-```
+```text
 /bugfix
 
 [Paste issue from CodeRabbit/Bugbot/etc.]
 ```
 
 **With context**:
-```
+```text
 /bugfix This is from CodeRabbit PR review:
 
 [Paste issue]
