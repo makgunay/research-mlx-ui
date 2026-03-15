@@ -85,7 +85,7 @@ export default function History({ experiments }) {
             <span className={`font-mono text-sm tabular-nums w-20 ${
               exp.status === "keep" ? "text-accent" : "text-text-primary"
             }`}>
-              {exp.val_bpb.toFixed(4)}
+              {typeof exp.val_bpb === "number" ? exp.val_bpb.toFixed(4) : "\u2014"}
             </span>
             <span className={`text-[11px] px-1.5 py-0.5 rounded font-mono ${
               exp.status === "keep" ? "bg-accent-dim text-accent" :
